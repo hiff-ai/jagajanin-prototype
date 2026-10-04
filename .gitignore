@@ -1,0 +1,6 @@
+# Local demo data: cases and uploaded sweep videos stay on the machine that ran the server.
+data/cases*.json
+data/videos/
+__pycache__/
+*.pyc
+.DS_Store

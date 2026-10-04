@@ -1,0 +1,9 @@
+{
+  "name": "Jagajanin",
+  "short_name": "Jagajanin",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#eaf0fb",
+  "theme_color": "#2f7de1",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

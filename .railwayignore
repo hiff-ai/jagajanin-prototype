@@ -1,0 +1,6 @@
+# Local demo data stays on this machine; the image only ships the synthetic sweep clips.
+data/cases*.json
+data/videos/
+__pycache__/
+*.pyc
+.DS_Store

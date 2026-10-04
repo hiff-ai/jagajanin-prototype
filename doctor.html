@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2f7de1">
+<title>Jagajanin Tele-Specialist</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #eef2f8; --card: #ffffff; --ink: #1d2433; --muted: #5d6779; --line: #dde3ee;
+    --blue: #2f7de1; --blue-soft: #e8f1fd; --sel: #dbe9fc;
+    --aman: #2e9e44; --aman-bg: #d9f8d3; --hati: #b7791f; --hati-bg: #fff2cc;
+    --rujuk: #c53030; --rujuk-bg: #ffe0e0; --unsure: #4a5568; --unsure-bg: #e9ecf2;
+    --urgent: #ffffff; --urgent-bg: #c53030;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10151f; --card: #1a2130; --ink: #e8ecf4; --muted: #9aa5b8; --line: #2a3346;
+      --blue: #5b9cf0; --blue-soft: #1d2c45; --sel: #22385a;
+      --aman: #6fd47f; --aman-bg: #173222; --hati: #f0c060; --hati-bg: #3a2f14;
+      --rujuk: #ff8a8a; --rujuk-bg: #3d1a1d; --unsure: #c2cad8; --unsure-bg: #262e3e;
+      --urgent: #ffffff; --urgent-bg: #b42323;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10151f; --card: #1a2130; --ink: #e8ecf4; --muted: #9aa5b8; --line: #2a3346;
+    --blue: #5b9cf0; --blue-soft: #1d2c45; --sel: #22385a;
+    --aman: #6fd47f; --aman-bg: #173222; --hati: #f0c060; --hati-bg: #3a2f14;
+    --rujuk: #ff8a8a; --rujuk-bg: #3d1a1d; --unsure: #c2cad8; --unsure-bg: #262e3e;
+    --urgent: #ffffff; --urgent-bg: #b42323;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--card);
+    border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 2; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 18px; color: var(--blue); }
+  header .who { color: var(--muted); font-size: 14px; flex: 1; }
+  .live { font-size: 12px; color: var(--aman); }
+  select, input, textarea { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line);
+    border-radius: 10px; padding: 8px 10px; }
+  textarea { width: 100%; min-height: 70px; }
+  main { display: grid; grid-template-columns: minmax(300px, 400px) 1fr; gap: 16px; padding: 16px; max-width: 1400px; margin: 0 auto; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; min-width: 0; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .tabs button { flex: 1; }
+  button { font: inherit; font-weight: 600; border: 0; border-radius: 999px; padding: 9px 14px; cursor: pointer;
+    background: var(--blue-soft); color: var(--blue); }
+  button.primary { background: var(--blue); color: #fff; padding: 12px 18px; width: 100%; margin-top: 12px; font-size: 16px; }
+  button.sel { background: var(--blue); color: #fff; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .q { padding: 10px; border-radius: 12px; cursor: pointer; border: 1px solid transparent; margin-bottom: 6px; }
+  .q:hover { background: var(--bg); }
+  .q.active { background: var(--sel); border-color: var(--blue); }
+  .q .top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+  .tag { font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; white-space: nowrap; letter-spacing: .3px; }
+  .tag.urgent { background: var(--urgent-bg); color: var(--urgent); }
+  .tag.rujuk { background: var(--rujuk-bg); color: var(--rujuk); } .tag.hati { background: var(--hati-bg); color: var(--hati); }
+  .tag.aman { background: var(--aman-bg); color: var(--aman); } .tag.unsure, .tag.rescan { background: var(--unsure-bg); color: var(--unsure); }
+  .sla { font-size: 12px; font-variant-numeric: tabular-nums; }
+  .sla.over { color: var(--rujuk); font-weight: 700; }
+  h2 { margin: 0; font-size: 20px; } h3 { margin: 18px 0 8px; font-size: 15px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 1100px) { .grid2 { grid-template-columns: 1fr; } }
+  .box { background: var(--bg); border-radius: 12px; padding: 10px 12px; }
+  .finding { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .finding:last-child { border-bottom: 0; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; margin-top: 6px; }
+  .dot.ok { background: var(--aman); } .dot.hati { background: var(--hati); } .dot.rujuk { background: var(--rujuk); } .dot.unsure { background: var(--unsure); }
+  .kv { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; }
+  .kv b { font-variant-numeric: tabular-nums; text-align: right; }
+  .low { color: var(--hati); }
+  .videos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  @media (max-width: 600px) { .videos { grid-template-columns: repeat(2, 1fr); } }
+  .vid { background: #000; border-radius: 10px; overflow: hidden; aspect-ratio: 4/3; position: relative; display: flex; align-items: center; justify-content: center; }
+  .vid video, .vid img { width: 100%; height: 100%; object-fit: contain; }
+  .vid .lbl { position: absolute; left: 6px; top: 6px; background: rgba(0,0,0,.6); color: #fff; font-size: 11px; padding: 2px 7px; border-radius: 6px; }
+  .vid .none { color: #8a93a6; font-size: 12px; }
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+  .fac { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 6px; cursor: pointer; }
+  .fac.off { opacity: .55; }
+  .fac.chosen { border-color: var(--blue); background: var(--sel); }
+  .fac input { margin-top: 4px; }
+  .badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--aman-bg); color: var(--aman); }
+  .badge.no { background: var(--unsure-bg); color: var(--unsure); }
+  .check { display: flex; gap: 8px; align-items: flex-start; padding: 5px 0; }
+  .check input { margin-top: 3px; }
+  .banner { background: var(--hati-bg); color: var(--hati); border-radius: 10px; padding: 8px 12px; font-size: 13px; margin-bottom: 10px; }
+  .urgentbar { background: var(--urgent-bg); color: var(--urgent); border-radius: 10px; padding: 8px 12px; font-weight: 700; margin: 10px 0; }
+  .democap { position: fixed; right: 10px; bottom: 6px; font-size: 11px; color: var(--muted); opacity: .8; pointer-events: none; }
+  .empty { color: var(--muted); text-align: center; padding: 40px 10px; }
+
+  /* caseload overview + scrollable queue */
+  #stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; padding: 12px 16px 0; max-width: 1400px; margin: 0 auto; }
+  @media (max-width: 1100px) { #stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; min-width: 0; }
+  .kpi .k { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi .v { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .kpi .s { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi.alert .v { color: var(--rujuk); }
+  .kpi.good .v { color: var(--aman); }
+  .tiers { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+  .tiers .tag { font-size: 9.5px; padding: 2px 5px; letter-spacing: 0; }
+  main { height: calc(100vh - 150px); }
+  @media (max-width: 860px) { main { height: auto; } }
+  .panel { overflow: auto; }
+  .qhead { position: sticky; top: -14px; background: var(--card); padding-top: 2px; z-index: 1; }
+  .grp { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; letter-spacing: .08em; color: var(--muted);
+    margin: 12px 4px 6px; text-transform: uppercase; }
+  .q.new { animation: flash 1.6s ease 3; }
+  @keyframes flash { 50% { background: var(--sel); } }
+  .tag.new { background: var(--blue); color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Jagajanin · Tele-Spesialis</h1>
+  <span class="who" id="who"></span>
+  <span class="live" id="live">●</span>
+  <select id="lang" aria-label="Language"><option value="id">ID</option><option value="en">EN</option></select>
+</header>
+<section id="stats"></section>
+<main>
+  <section class="panel" id="queue"></section>
+  <section class="panel" id="detail"></section>
+</main>
+<script src="i18n.js"></script>
+<script src="rules.js"></script>
+<script src="protocols.js"></script>
+<script src="doctor.js"></script>
+</body>
+</html>
