@@ -4,7 +4,7 @@ hiff.ai's prototype for the Hack-Nation × World Bank **"Small AI for Developmen
 
 A midwife at a Puskesmas (primary health centre) connects her phone to the clinic's ultrasound scanner and follows six guided probe sweeps. She needs no ultrasound training. The phone works out whether the mother needs a specialist, offline. When a signal returns, the case goes to a tele-obstetrician, who validates it and sends the referral plan back to the midwife.
 
-**Live demo:** [midwife app](https://jagajanin-production.up.railway.app/index.html?clean=1) · [tele-specialist console](https://jagajanin-production.up.railway.app/doctor.html?clean=1)
+**Live demo:** [jagajanin-production.up.railway.app](https://jagajanin-production.up.railway.app/) opens the demo home, which links all four screens (midwife app, specialist console, receiving hospital, loop dashboard) and walks through the loop. A bar at the top of every screen switches between them.
 
 The live demo resets to a fictional caseload on every restart. Please don't enter real patient information.
 

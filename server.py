@@ -1,6 +1,7 @@
 """Jagajanin prototype — local demo server (Python stdlib only).
 
-Serves the midwife app (/) and the tele-specialist console (/doctor.html), plus a small
+Serves the demo home (/), the midwife app (/index.html), the tele-specialist console (/doctor.html),
+the receiving hospital (/hospital.html) and the loop dashboard (/loop.html), plus a small
 telemedicine API. Stands in for a production backend (integrated with SATUSEHAT).
 
     python3 server.py            # http://localhost:8765  and  http://<LAN-IP>:8765
@@ -174,6 +175,10 @@ class Handler(SimpleHTTPRequestHandler):
 
     # GET /api/cases · /api/cases/<id> · /api/videos/<id>/<n>
     def do_GET(self):
+        # The base URL opens the demo home, which links every screen.
+        path, _, query = self.path.partition("?")
+        if path in ("/", "/demo"):
+            self.path = "/demo.html" + ("?" + query if query else "")
         parts = self.path.split("?")[0].strip("/").split("/")
         if parts[:2] == ["api", "cases"]:
             with lock:

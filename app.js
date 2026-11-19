@@ -12,6 +12,7 @@ const store = {
 const CLEAN = new URLSearchParams(location.search).has('clean');
 let S = freshVisit();
 LANG = store.get('jj_lang', 'id');
+{ const ul = new URLSearchParams(location.search).get('lang'); if (['id', 'jv', 'en'].includes(ul)) { LANG = ul; store.set('jj_lang', ul); } }
 
 function freshVisit() {
   return { screen: 'home', scenario: 'noor', visit: { id: '', age: '', hpht: '', bpSys: '', bpDia: '', signs: [] },

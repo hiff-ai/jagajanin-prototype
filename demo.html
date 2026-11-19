@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b2447">
+<title>Jagajanin Demo</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #eef2f8; --card: #ffffff; --ink: #1d2433; --muted: #5d6779; --line: #dde3ee;
+    --blue: #2f7de1; --blue-soft: #e8f1fd; --navy: #0b2447;
+    --aman: #2e9e44; --hati: #b7791f; --rujuk: #c53030;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10151f; --card: #1a2130; --ink: #e8ecf4; --muted: #9aa5b8; --line: #2a3346;
+      --blue: #5b9cf0; --blue-soft: #1d2c45; --aman: #6fd47f; --hati: #f0c060; --rujuk: #ff8a8a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 28px max(16px, env(safe-area-inset-left, 0px)) 48px; display: flex; flex-direction: column; gap: 28px; }
+  .kick { font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--blue); }
+  h1 { font-size: clamp(28px, 4.5vw, 40px); line-height: 1.12; margin: 6px 0 10px; text-wrap: balance; }
+  h1 em { font-style: normal; color: var(--blue); }
+  h2 { font-size: 20px; margin: 0 0 12px; }
+  .lede { font-size: 18px; color: var(--muted); max-width: 68ch; margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .chip { font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); }
+  .screens { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 900px) { .screens { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .screens { grid-template-columns: 1fr; } }
+  .scr { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit; }
+  .scr:hover { border-color: var(--blue); }
+  .scr:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .scr .n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--blue-soft); color: var(--blue); font-weight: 800; font-size: 14px; }
+  .scr b { font-size: 17px; }
+  .scr span { font-size: 14px; color: var(--muted); }
+  .scr .go { margin-top: auto; font-size: 14px; font-weight: 700; color: var(--blue); }
+  ol.walk { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: s; }
+  ol.walk li { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; counter-increment: s; }
+  ol.walk li::before { content: counter(s); width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--blue); color: #fff; font-weight: 800; font-size: 14px; }
+  ol.walk b a { color: var(--blue); }
+  ol.walk p { margin: 2px 0 0; color: var(--muted); font-size: 15px; }
+  .note { font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+  .tiers { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+  .t { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; color: #fff; }
+</style>
+</head>
+<body>
+<main id="m"></main>
+<script>
+const T = {
+  en: {
+    kick: 'JagaJanin by Hiff.ai · working prototype',
+    h1: 'From a six-sweep scan to <em>documented care</em>',
+    lede: 'Four screens share one case record. A midwife scans, a specialist validates, the mother is told in plain language, and the receiving hospital closes the case with evidence. No login needed.',
+    chips: ['Future Health Digital Innovation Challenge', 'Closing the Screening-to-Care Loop', 'Fictional cases · scripted AI results'],
+    screens: 'The four screens',
+    s: [
+      ['Midwife app', 'Guided six-sweep scan, risk tier, message to the mother', 'index.html'],
+      ['Specialist console', 'Risk-sorted queue, validation, referral routing, case trail', 'doctor.html'],
+      ['Receiving hospital', 'Accept or redirect, record arrival, close with evidence', 'hospital.html'],
+      ['Loop dashboard', 'Open cases by owner, overdue steps, completion, drop-offs', 'loop.html'],
+    ],
+    open: 'Open →',
+    walk: 'Try the whole loop in five minutes',
+    w: [
+      ['Midwife app', 'index.html', 'Tap <b>New Visit</b>, pick a demo case such as placenta previa, follow the six sweeps, then save the result.'],
+      ['Specialist console', 'doctor.html', 'Your case appears in the queue. Open it, review the six sweeps, confirm the referral and send it. The nearest hospital able to treat her is preselected.'],
+      ['Midwife app', 'index.html', 'Open the specialist\'s reply, confirm the first steps, send the mother her message and record that she understood.'],
+      ['Receiving hospital', 'hospital.html', 'Accept the referral, record that she arrived, then close it with an outcome and a record number. Closing without evidence is refused.'],
+      ['Loop dashboard', 'loop.html', 'See the case close, alongside open cases by owner and anything past its time target.'],
+    ],
+    note: 'Demo only: the cases, health sites and hospitals are fictional, AI results are scripted and the sweep clips are synthetic. There is no patient data. The caseload resets whenever the server restarts. Use the bar at the top to switch screens.',
+  },
+  id: {
+    kick: 'JagaJanin oleh Hiff.ai · prototipe',
+    h1: 'Dari USG 6 sisiran sampai <em>perawatan yang tercatat</em>',
+    lede: 'Empat layar berbagi satu catatan kasus. Bidan memindai, spesialis memvalidasi, ibu diberi tahu dengan bahasa sederhana, dan RS tujuan menutup kasus dengan bukti. Tanpa login.',
+    chips: ['Future Health Digital Innovation Challenge', 'Closing the Screening-to-Care Loop', 'Kasus fiktif · hasil AI tersimulasi'],
+    screens: 'Empat layar',
+    s: [
+      ['Aplikasi bidan', 'USG 6 sisiran terpandu, tingkat risiko, pesan untuk ibu', 'index.html'],
+      ['Konsol spesialis', 'Antrean menurut risiko, validasi, rujukan, jejak kasus', 'doctor.html'],
+      ['RS tujuan', 'Terima atau alihkan, catat kedatangan, tutup dengan bukti', 'hospital.html'],
+      ['Dasbor loop', 'Kasus terbuka per penanggung jawab, lewat batas, tuntas, putus', 'loop.html'],
+    ],
+    open: 'Buka →',
+    walk: 'Coba seluruh loop dalam lima menit',
+    w: [
+      ['Aplikasi bidan', 'index.html', 'Ketuk <b>Kunjungan Baru</b>, pilih kasus demo (mis. plasenta previa), ikuti 6 sisiran, lalu simpan.'],
+      ['Konsol spesialis', 'doctor.html', 'Kasus Anda masuk antrean. Buka, tinjau 6 sisiran, konfirmasi rujukan dan kirim. RS terdekat yang mampu sudah terpilih.'],
+      ['Aplikasi bidan', 'index.html', 'Buka balasan spesialis, konfirmasi langkah awal, kirim pesan untuk ibu dan catat bahwa ia paham.'],
+      ['RS tujuan', 'hospital.html', 'Terima rujukan, catat kedatangan, lalu tutup dengan hasil dan nomor rekam medis. Tanpa bukti, kasus tidak bisa ditutup.'],
+      ['Dasbor loop', 'loop.html', 'Lihat kasus tertutup, kasus terbuka per penanggung jawab dan yang lewat batas waktu.'],
+    ],
+    note: 'Demo: kasus, faskes dan RS fiktif, hasil AI tersimulasi dan klip sisiran sintetis. Tidak ada data pasien. Data demo diatur ulang setiap server dimulai ulang. Gunakan bar di atas untuk berpindah layar.',
+  },
+};
+const P = new URLSearchParams(location.search);
+const L = P.get('lang') === 'id' ? 'id' : 'en';
+const k = new URLSearchParams({ lang: L }); if (P.has('clean')) k.set('clean', P.get('clean'));
+const q = '?' + k;
+const x = T[L];
+document.documentElement.lang = L;
+document.getElementById('m').innerHTML = `
+  <header><div class="kick">${x.kick}</div><h1>${x.h1}</h1><p class="lede">${x.lede}</p>
+    <div class="chips">${x.chips.map((c) => `<span class="chip">${c}</span>`).join('')}</div></header>
+  <section><h2>${x.screens}</h2><div class="screens">
+    ${x.s.map(([t, d, href], i) => `<a class="scr" href="${href}${q}"><span class="n">${i + 1}</span><b>${t}</b><span>${d}</span><span class="go">${x.open}</span></a>`).join('')}
+  </div></section>
+  <section><h2>${x.walk}</h2><ol class="walk">
+    ${x.w.map(([t, href, d]) => `<li><div><b><a href="${href}${q}">${t}</a></b><p>${d}</p></div></li>`).join('')}
+  </ol></section>
+  <p class="note">${x.note}</p>`;
+</script>
+<script src="nav.js"></script>
+</body>
+</html>
