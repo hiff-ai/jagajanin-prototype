@@ -1,7 +1,7 @@
 // Network-first service worker with cache fallback: always fresh when online, and after one load
 // the whole app (and, in production, the model file) works offline.
-const CACHE = 'jagajanin-v4';
-const ASSETS = ['./', 'index.html', 'app.js', 'rules.js', 'model.js', 'i18n.js', 'manifest.json', 'icon.svg', 'protocols.js', 'doctor.html', 'doctor.js'];
+const CACHE = 'jagajanin-v5';
+const ASSETS = ['./', 'index.html', 'app.js', 'rules.js', 'model.js', 'i18n.js', 'manifest.json', 'icon.svg', 'protocols.js', 'doctor.html', 'doctor.js', 'loop.js', 'hospital.html', 'hospital.js', 'loop.html', 'loopdash.js'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));

@@ -174,7 +174,74 @@ def make_case(rng, now, kind, waited_ms, validated=None, override=None, reason="
         case["validation"] = {"doctor": DOCTOR, "decision": decision, "timing": timing, "date": None, "facility": fac,
                               "actions": [], "note": "", "at": at,
                               "ackAt": at + rng.randint(4, 40) * MIN if at + 45 * MIN < now else None, "doneActions": []}
+        loop = build_loop(rng, case, now)
+        if loop:
+            case["loop"] = loop
     return case
+
+
+def build_loop(rng, case, now):
+    """Fictional loop history for a validated case: informed, accepted, arrived, closed,
+    stopping wherever 'now' falls, with a few overdue steps and drop-offs."""
+    v, mw = case["validation"], case["midwife"]
+    dec, em = v["decision"], v["timing"] == "emergency"
+    loop, log = {}, []
+
+    def add(key, at, by, role, summary, **extra):
+        if at >= now:
+            return False
+        loop[key] = {"at": at, "by": by, **extra}
+        log.append({"at": at, "event": key, "by": by, "role": role, "summary": summary})
+        return True
+
+    if not v.get("ackAt"):
+        return None
+    roll = rng.random()
+    t = v["ackAt"] + rng.randint(2, 25 if not em else 8) * MIN
+    if roll < 0.08:   # midwife hasn't told the mother yet
+        return None
+    if not add("informed", t, mw, "midwife", "mother informed by sms", channel="sms", lang="id", text=""):
+        return loop or None
+    t += rng.randint(3, 40) * MIN
+    ok = rng.random() > 0.12
+    if add("understood", t, mw, "midwife", "mother understood (teach-back)" if ok else "mother has questions",
+           understood=ok, note=""):
+        pass
+    desk = f"Petugas rujukan · {(v.get('facility') or {}).get('name', '')} (demo)"
+    if dec == "rujuk":
+        fac = v["facility"]
+        if rng.random() < 0.1:   # hospital hasn't answered: overdue acceptance
+            return {**loop, "log": log}
+        t = v["at"] + (rng.randint(6, 28) if em else rng.randint(60, 9 * 60)) * MIN
+        if not add("accepted", t, desk, "hospital", f"accepted at {fac['name']}", facility=fac["name"]):
+            return {**loop, "log": log}
+        drop = rng.random()
+        if drop < 0.14:   # never arrived: specialist closes as not completed, with the reason
+            reason = rng.choice(["lost_contact", "transport", "cost", "declined"])
+            t2 = t + rng.randint(26, 50) * 60 * MIN
+            if t2 < now:
+                loop["closed"] = {"at": t2, "by": DOCTOR, "role": "specialist", "outcome": "not_completed",
+                                  "dropReason": reason, "evidence": "Bidan menelepon keluarga 2x"}
+                log.append({"at": t2, "event": "closed", "by": DOCTOR, "role": "specialist",
+                            "summary": f"closed as not completed ({reason})"})
+            return {**loop, "log": log}
+        t += ((fac.get("min") or 45) + rng.randint(10, 50)) * MIN if em else rng.randint(4, 40) * 60 * MIN
+        if not add("arrived", t, desk, "hospital", "mother arrived and was seen"):
+            return {**loop, "log": log}
+        t += rng.randint(2, 20) * 60 * MIN
+        outcome = rng.choice(["admitted", "treated_discharged", "treated_discharged", "delivered"]) if em else \
+            rng.choice(["treated_discharged", "treated_discharged", "admitted"])
+        clin = rng.choice(["dr. Putri, Sp.OG", "dr. Hendra, Sp.OG", "dr. Lestiani, Sp.OG"])
+        ev = f"RM-{rng.randint(100000, 999999)} · ringkasan pulang"
+        if t < now:
+            loop["closed"] = {"at": t, "by": f"{clin} · {fac['name']}", "role": "hospital", "outcome": outcome, "evidence": ev}
+            log.append({"at": t, "event": "closed", "by": f"{clin} · {fac['name']}", "role": "hospital", "summary": f"closed: {outcome}"})
+    elif dec == "aman":
+        t += rng.randint(30, 300) * MIN
+        if t < now and rng.random() < 0.85:
+            loop["closed"] = {"at": t, "by": mw, "role": "midwife", "outcome": "routine_anc", "evidence": "Catatan ANC di Buku KIA"}
+            log.append({"at": t, "event": "closed", "by": mw, "role": "midwife", "summary": "closed: routine_anc"})
+    return {**loop, "log": log}
 
 
 def seed(cases, n_seed=7):

@@ -48,6 +48,102 @@ def save_cases(cases):
 
 SAFE_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
+# Closing the loop (mirrors loop.js). A case closes only with an outcome, evidence and an
+# authorised role; "not_completed" needs a reason and a specialist's decision.
+LOOP_OUTCOMES = {
+    "rujuk": {"admitted", "treated_discharged", "delivered", "referred_on"},
+    "hati": {"followup_done", "escalated_referral"},
+    "rescan": {"followup_done", "escalated_referral"},
+    "aman": {"routine_anc"},
+}
+CLOSE_ROLES = {"rujuk": {"hospital", "specialist"}, "hati": {"midwife", "specialist"},
+               "rescan": {"midwife", "specialist"}, "aman": {"midwife", "specialist"}}
+DROP_REASONS = {"lost_contact", "declined", "cost", "transport", "went_elsewhere", "other"}
+ROLES = {"specialist", "midwife", "hospital"}
+
+
+def apply_loop_event(case, ev, now):
+    """Validate one loop event and apply it to the case. Returns an error string or None."""
+    val = case.get("validation")
+    if not val:
+        return "case not validated yet"
+    loop = case.setdefault("loop", {})
+    if loop.get("closed"):
+        return "case already closed"
+    kind, role = ev.get("event"), ev.get("role")
+    by = str(ev.get("by") or "").strip()[:80]
+    if role not in ROLES or not by:
+        return "who is acting (by, role) is required"
+    dec = val.get("decision")
+    summary = kind
+    if kind == "informed":
+        loop["informed"] = {"at": now, "by": by, "channel": ev.get("channel", "sms"),
+                            "lang": ev.get("lang", "id"), "text": str(ev.get("text", ""))[:1000]}
+        summary = f"mother informed by {loop['informed']['channel']}"
+    elif kind == "understood":
+        if not loop.get("informed"):
+            return "inform the mother first"
+        loop["understood"] = {"at": now, "by": by, "understood": bool(ev.get("understood")),
+                              "note": str(ev.get("note", ""))[:300]}
+        summary = "mother understood (teach-back)" if ev.get("understood") else "mother has questions"
+    elif kind in ("accepted", "redirected", "arrived"):
+        if dec != "rujuk" or role not in ("hospital", "specialist"):
+            return "only the receiving hospital can do this, on a referral"
+        if kind == "accepted":
+            loop["accepted"] = {"at": now, "by": by, "facility": (val.get("facility") or {}).get("name")}
+            summary = f"accepted at {loop['accepted']['facility']}"
+        elif kind == "redirected":
+            to = ev.get("to") or {}
+            reason = str(ev.get("reason", "")).strip()
+            if not to.get("name") or not reason:
+                return "redirect needs a destination and a reason"
+            prev = (val.get("facility") or {}).get("name")
+            val["facility"] = {k: to.get(k) for k in ("id", "name", "km", "min")}
+            loop.pop("accepted", None)
+            summary = f"redirected from {prev} to {to['name']}: {reason[:120]}"
+        else:
+            if not loop.get("accepted"):
+                return "accept the referral first"
+            loop["arrived"] = {"at": now, "by": by}
+            summary = "mother arrived and was seen"
+    elif kind == "followup":
+        if dec not in ("hati", "rescan") or role not in ("midwife", "specialist"):
+            return "follow-up applies to HATI-HATI or rescan cases"
+        loop["followup"] = {"at": now, "by": by, "note": str(ev.get("note", ""))[:300]}
+        summary = "follow-up visit done"
+    elif kind == "escalated":
+        loop.setdefault("escalations", []).append({"at": now, "by": by, "to": str(ev.get("to", ""))[:80],
+                                                   "note": str(ev.get("note", ""))[:300]})
+        summary = f"escalated to {ev.get('to', '')}"
+    elif kind == "closed":
+        outcome = ev.get("outcome")
+        if outcome == "not_completed":
+            if role != "specialist":
+                return "only a specialist can close a case as not completed"
+            if ev.get("dropReason") not in DROP_REASONS:
+                return "a reason is required"
+            loop["closed"] = {"at": now, "by": by, "role": role, "outcome": outcome,
+                              "dropReason": ev["dropReason"], "evidence": str(ev.get("evidence", ""))[:300]}
+            summary = f"closed as not completed ({ev['dropReason']})"
+        else:
+            if outcome not in LOOP_OUTCOMES.get(dec, set()):
+                return "choose an outcome"
+            if role not in CLOSE_ROLES.get(dec, set()):
+                return f"a {role} cannot close this case"
+            evidence = str(ev.get("evidence", "")).strip()
+            if len(evidence) < 3:
+                return "evidence is required (record number, summary or visit note)"
+            if dec == "rujuk" and not loop.get("arrived"):
+                return "record arrival before closing a referral"
+            if dec in ("hati", "rescan") and not loop.get("followup"):
+                return "record the follow-up visit before closing"
+            loop["closed"] = {"at": now, "by": by, "role": role, "outcome": outcome, "evidence": evidence[:300]}
+            summary = f"closed: {outcome}"
+    else:
+        return "unknown event"
+    loop.setdefault("log", []).append({"at": now, "event": kind, "by": by, "role": role, "summary": summary})
+    return None
+
 
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -123,7 +219,7 @@ class Handler(SimpleHTTPRequestHandler):
             f.seek(start)
             self.wfile.write(f.read(end - start + 1))
 
-    # POST /api/cases · /api/cases/<id>/videos/<n> · /api/cases/<id>/validation · /api/cases/<id>/ack
+    # POST /api/cases · /api/cases/<id>/videos/<n> · /api/cases/<id>/validation · /api/cases/<id>/ack · /api/cases/<id>/loop
     def do_POST(self):
         parts = self.path.split("?")[0].strip("/").split("/")
         try:
@@ -138,6 +234,8 @@ class Handler(SimpleHTTPRequestHandler):
                     case["receivedAt"] = prev.get("receivedAt") or int(time.time() * 1000)
                     case["uploaded"] = prev.get("uploaded", [])
                     case["validation"] = prev.get("validation")
+                    if prev.get("loop"):
+                        case["loop"] = prev["loop"]
                     cases[cid] = case
                     save_cases(cases)
                 return self.send_json({"ok": True, "receivedAt": case["receivedAt"]})
@@ -161,6 +259,18 @@ class Handler(SimpleHTTPRequestHandler):
                             cases[cid]["uploaded"] = sorted(set(cases[cid].get("uploaded", [])) | {n})
                             save_cases(cases)
                     return self.send_json({"ok": True})
+
+                if parts[3] == "loop" and len(parts) == 4:
+                    ev = json.loads(self.read_body(64 * 1024))
+                    with lock:
+                        cases = load_cases()
+                        if cid not in cases:
+                            return self.send_json({"error": "not found"}, 404)
+                        err = apply_loop_event(cases[cid], ev, int(time.time() * 1000))
+                        if err:
+                            return self.send_json({"error": err}, 400)
+                        save_cases(cases)
+                        return self.send_json({"ok": True, "loop": cases[cid]["loop"]})
 
                 if parts[3] in ("validation", "ack") and len(parts) == 4:
                     body = json.loads(self.read_body(256 * 1024))

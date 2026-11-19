@@ -17,6 +17,27 @@ The live demo resets to a fictional caseload on every restart. Please don't ente
 
 The result is always one of four fixed outcomes: **AMAN** (safe), **HATI-HATI** (caution), **RUJUK** (refer) or **TIDAK YAKIN** (not sure).
 
+## Closing the loop
+
+Every validated case now follows a trail until a person closes it with evidence. Each step has an owner and a time target, and the server enforces the closure rules in `server.py`.
+
+| Step | Owner | Where |
+|---|---|---|
+| Specialist validates | Specialist | Console |
+| Midwife confirms the instructions | Midwife | Midwife app |
+| Mother informed in plain language, then a teach-back check that she understood | Midwife | Midwife app |
+| Referral accepted, or redirected with a reason | Receiving hospital | `hospital.html` |
+| Mother arrived and was seen | Receiving hospital | `hospital.html` |
+| Follow-up visit (HATI-HATI, rescan) | Midwife | Midwife app |
+| Closed with an outcome, evidence and the closer's name | Hospital (referrals), midwife or specialist | All |
+
+- **Closure needs evidence.** A record number or visit note is required, and a referral can't close before arrival is recorded.
+- **"Not completed" is a specialist's decision.** It needs a reason: could not be reached, family declined, cost, transport, went elsewhere or other.
+- **Overdue steps are visible.** The console has *In progress* and *Closed* tabs, can escalate an overdue step, and shows a loop KPI.
+- **`loop.html` is the loop dashboard.** It shows open cases by owner, past-target cases, completion rate, time per step, drop-off reasons and results per health site. With the seeded caseload these numbers are fictional and labelled as such.
+- **Time targets are draft values** in `loop.js`, pending agreement with the referral network.
+- **Demo links:** the receiving hospital at `/hospital.html?f=rsud&lang=en`, the dashboard at `/loop.html?lang=en`, and the console at `/doctor.html?lang=en`.
+
 ## Guardrails
 
 - **Fixed outputs only.** The tool chooses from four outcomes and a fixed list of reasons. It never generates free text.

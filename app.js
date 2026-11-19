@@ -277,6 +277,7 @@ const screens = {
         ${val.note ? `<div class="card"><h3>${t('doctor_note')}</h3><p style="margin:0">${esc(val.note)}</p></div>` : ''}
         ${val.ackAt ? `<p class="muted" style="text-align:center">✓ ${t('acked')} ${new Date(val.ackAt).toLocaleTimeString()}</p>`
           : `<button onclick="ackCase()">${t('ack')}</button>`}
+        ${val.ackAt ? loopCards(v) : ''}
       ` : ''}
       <button class="ghost" onclick="go('history')">${t('back')}</button>`;
   },
@@ -376,6 +377,58 @@ async function ackCase() {
     await fetch(`api/cases/${v.caseId}/ack`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ doneActions: S.done || [] }) });
   } catch {}
 }
+// After the midwife confirms: tell the mother, check she understood, then follow-up and closure.
+function loopCards(v) {
+  const l = v.loop || {};
+  const dec = v.validation.decision;
+  const ml = LANG === 'en' ? 'en' : 'id';
+  const msg = motherMessage(v, ml);
+  const closed = !!l.closed;
+  const canClose = !closed && (dec === 'aman' ? !!l.informed : ['hati', 'rescan'].includes(dec) ? !!l.followup : false);
+  return `
+    <div class="card"><h3>${t('msg_title')}</h3>
+      ${l.informed ? `<p class="muted" style="margin:0 0 6px">✓ ${t('msg_sent')} · ${new Date(l.informed.at).toLocaleTimeString()}</p>`
+        : `<p class="muted" style="margin:0 0 6px">${t('msg_sub')}</p>`}
+      <pre class="slip">${esc(l.informed?.text || msg)}</pre>
+      ${l.informed ? '' : `<div class="row" style="margin-top:10px">
+        <a href="sms:?body=${encodeURIComponent(msg)}" style="flex:1" onclick="loopEvent('informed', { channel: 'sms', lang: '${ml}', text: ${esc(JSON.stringify(msg))} })"><button class="small" style="width:100%">✉ ${t('msg_sms')}</button></a>
+        <button class="ghost small" style="flex:1" onclick='loopEvent("informed", { channel: "in_person", lang: "${ml}", text: ${esc(JSON.stringify(msg))} })'>${t('msg_person')}</button></div>`}
+      ${l.informed && !l.understood?.understood ? `<p style="margin:12px 0 6px">${t('teach_q')}</p>
+        ${l.understood && !l.understood.understood ? `<p class="muted" style="margin:0 0 6px">? ${t('msg_no_hint')}</p>` : ''}
+        <div class="row"><button class="small" style="flex:1" onclick="loopEvent('understood', { understood: true })">✓ ${t('msg_yes')}</button>
+          <button class="ghost small" style="flex:1" onclick="loopEvent('understood', { understood: false })">? ${t('msg_no')}</button></div>` : ''}
+      ${l.understood?.understood ? `<p class="muted" style="margin:8px 0 0">✓ ${t('msg_yes')} · ${new Date(l.understood.at).toLocaleTimeString()}</p>` : ''}
+    </div>
+    ${['hati', 'rescan'].includes(dec) && l.informed && !l.followup ? `<div class="card"><h3>${t('fu_title')}</h3>
+      <button onclick="loopEvent('followup', {})">${t('fu_done')}</button></div>` : ''}
+    ${canClose ? `<div class="card"><h3>${t('close_title')}</h3>
+      <input id="ev" style="width:100%" placeholder="${t('close_evidence')}">
+      <button onclick="loopEvent('closed', { outcome: '${dec === 'aman' ? 'routine_anc' : 'followup_done'}', evidence: document.getElementById('ev').value })">${t('close_btn')}</button></div>` : ''}
+    <div class="card"><h3>${t('trail_title')}</h3>${trailHTML(v, ml)}</div>`;
+}
+async function loopEvent(event, extra) {
+  const v = S.saved;
+  try {
+    const j = await postLoop(v.caseId, { event, by: v.midwife || 'Bidan', role: 'midwife', ...extra });
+    updateVisit(v.caseId, { loop: j.loop });
+    S.saved = visits().find((x) => x.caseId === v.caseId);
+    render();
+  } catch (e) { toast('⚠ ' + (e.message === 'Failed to fetch' ? t('need_signal') : e.message)); }
+}
+// Keep validated, still-open cases in step with what the hospital and the specialist record.
+async function pollLoops() {
+  for (const v of visits().filter((x) => x.validation && !x.loop?.closed)) {
+    const r = await fetch(`api/cases/${v.caseId}`);
+    if (!r.ok) continue;
+    const c = await r.json();
+    if (JSON.stringify(c.loop || null) !== JSON.stringify(v.loop || null) || c.validation?.facility?.id !== v.validation?.facility?.id) {
+      updateVisit(v.caseId, { loop: c.loop, validation: { ...v.validation, facility: c.validation?.facility } });
+      if (S.saved?.caseId === v.caseId) S.saved = visits().find((x) => x.caseId === v.caseId);
+      softRender();
+    }
+  }
+}
+
 function telemedCard(v) {
   const steps = [
     { ok: true, label: t('tm_saved') },
@@ -390,7 +443,12 @@ function telemedCard(v) {
   </div>`;
 }
 function statusLine(v) {
-  if (v.validation) return `👩‍⚕️ ${t('dec_' + v.validation.decision)}${v.validation.ackAt ? ' · ✓' : ' · ' + t('new_reply')}`;
+  if (v.validation) {
+    const st = loopState(v);
+    const ml = LANG === 'en' ? 'en' : 'id';
+    const step = st.closed ? '✓ ' + lt(ml, 'closed') : st.current ? '→ ' + lt(ml, 's_' + st.current.key) + (st.overdue ? ' ⚠' : '') : '';
+    return `👩‍⚕️ ${t('dec_' + v.validation.decision)}${v.validation.ackAt ? ' · ' + step : ' · ' + t('new_reply')}`;
+  }
   if (!v.synced) return '⏳ ' + t('pending');
   return '📤 ' + t('tm_waiting');
 }
@@ -443,6 +501,7 @@ async function trySync() {
       }
     }
     await pollValidations();
+    await pollLoops();
   } catch { /* no server or no signal: keep everything queued, retry later */ }
   syncing = false;
 }
